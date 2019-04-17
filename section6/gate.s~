@@ -1,0 +1,80 @@
+/* ==================================================================
+ *
+ * CS 160 Gerald jones
+ *
+ * jump_logic.s
+ *
+ * creates a jump table program that will do the logic functions:
+ * 0-and,1-or,2-xor,3-bit clear,4-not and,5-not or,6-not xor
+ * uses r0 as table index
+ * ================================================================== */
+ 
+ .text
+ 
+ .global _start
+ 
+ .equ 		num_fnc,7		@the number of logic functions available
+ 
+ 
+ _start:
+ 
+ 			mov r0,#0			@initialize r0 to 7
+			mov r3,#0 			@initialize r3 to 0
+			mov r4,#0xffffffff 		@set r4 =0x11111111	
+ 			mov r1,#0x1			@initialize r1 to 1
+ 			mov r2,#0x2			@initialize r2 to 2			
+
+loop:			
+ 	      bl logic_fnc		@go to logic function			
+			add r0,r0,#1 	   @r0=r0+1   
+ 	      cmp r0,#num_fnc	@? r0 < num_fnc=7
+ 			blt loop				@if r0 < 7 go through loop 
+ 			swi 0x11
+ 			
+ logic_fnc:
+ 			cmp r0,#num_fnc	@compare r0 to 7
+ 			bhs do_and			@if r0 >=7 the do and
+ 			adr r5,JumpTable	@if no then r5= &jumptable
+ 			ldr pc,[r5,r0,lsl #2]	@PC=r5+r0*4
+ 			
+JumpTable:						@table of logic functions
+		.word do_and			@for r0=0
+		.word do_or				@for r0=1
+		.word do_xor			@for r0=2	
+		.word do_bic			@for r0=3
+		.word do_N_and			@for r0=4
+		.word do_N_or			@for r0=5
+		.word do_N_xor 		@for r0=6
+	
+	
+do_and:								
+		and r3,r1,r2			@r3=r1*r2
+		mov pc,lr				@return
+		
+do_or:							
+		orr r3,r1,r2			@r3=r1+r2
+		mov pc,lr				@return
+		
+do_xor:
+		eor r3,r1,r2			@r3=r1 xor r2
+		mov pc,lr				@return
+		
+do_bic:
+		bic r3,r1,r2			@r3=r1 * Not(r2)
+		mov pc,lr				@return
+		
+do_N_and:
+		and r3,r1,r2			@r3=r1*r2
+		bic r3,r4,r3		   @r3=11111111 * Not(r3)
+		mov pc,lr				@return
+
+do_N_or:
+		orr r3,r1,r2				@r3=r1+r2
+		bic r3,r4,r3		   @r3=11111111 + Not(r3)
+		mov pc,lr				@return
+
+do_N_xor:
+		eor r3,r1,r2         @r3=r1 xor r2
+		bic r3,r4,r3			@r3=11111111 xor Not(r3)
+		mov pc,lr            @return
+		.end 
